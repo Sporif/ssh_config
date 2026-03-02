@@ -706,15 +706,15 @@ type Include struct {
 	// Comment is the contents of any comment at the end of the Include
 	// statement.
 	Comment string
+	// actual filenames are listed here
+	Files map[string]*Config
 	// an include directive can include several different files, and wildcards
 	directives []string
 
 	mu sync.Mutex
 	// 1:1 mapping between matches and keys in files array; matches preserves
 	// ordering
-	matches []string
-	// actual filenames are listed here
-	files        map[string]*Config
+	matches      []string
 	leadingSpace int
 	position     Position
 	depth        uint8
@@ -754,7 +754,7 @@ func NewInclude(directives []string, hasEquals bool, pos Position, comment strin
 	inc := &Include{
 		Comment:      comment,
 		directives:   directives,
-		files:        make(map[string]*Config),
+		Files:        make(map[string]*Config),
 		position:     pos,
 		leadingSpace: pos.Col - 1,
 		depth:        depth,
@@ -786,7 +786,7 @@ func NewInclude(directives []string, hasEquals bool, pos Position, comment strin
 		if err != nil {
 			return nil, err
 		}
-		inc.files[matches[i]] = config
+		inc.Files[matches[i]] = config
 	}
 	return inc, nil
 }
@@ -803,7 +803,7 @@ func (inc *Include) Get(alias, key string) string {
 	defer inc.mu.Unlock()
 	// TODO: we search files in any order which is not correct
 	for i := range inc.matches {
-		cfg := inc.files[inc.matches[i]]
+		cfg := inc.Files[inc.matches[i]]
 		if cfg == nil {
 			panic("nil cfg")
 		}
@@ -824,7 +824,7 @@ func (inc *Include) GetAll(alias, key string) ([]string, error) {
 
 	// TODO: we search files in any order which is not correct
 	for i := range inc.matches {
-		cfg := inc.files[inc.matches[i]]
+		cfg := inc.Files[inc.matches[i]]
 		if cfg == nil {
 			panic("nil cfg")
 		}
